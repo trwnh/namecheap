@@ -1,0 +1,90 @@
+#!/bin/python
+
+import requests
+from bs4 import BeautifulSoup as bs
+#import requests_cache
+import os
+import time
+
+#requests_cache.install_cache('namecheap_cache')
+SANDBOX=False
+
+api_username = "username"
+api_key = "put your namecheap api key here"
+client_ip = "0.0.0.0"
+nc_username = "username"
+
+def main(): 
+	domain = os.getenv('CERTBOT_DOMAIN')
+	hosts = getHostRecords(domain)
+	challenge = os.getenv('CERTBOT_VALIDATION')
+	challengeTag = bs(f'<host name="_acme-challenge" type="TXT" address="{challenge}" ttl="60"', 'lxml').body.next
+	hosts.append(challengeTag)
+	setHostRecords(domain,hosts)
+	time.sleep(20)
+
+def methodURL(cmd_name, *args, **kwargs):
+	"""
+	Transforms a method name into a request URL.
+	Can return either sandbox or live URL.
+	"""
+	global api_username, api_key, nc_username, client_ip
+	sandbox = kwargs.get('sandbox', True)
+	if sandbox:
+		api_url = "https://api.sandbox.namecheap.com/xml.response"
+	else:
+		api_url = "https://api.namecheap.com/xml.response"
+	return f"{api_url}?ApiUser={api_username}&ApiKey={api_key}&UserName={nc_username}&ClientIp={client_ip}&Command={cmd_name}"
+
+def getDomainList():
+	"""
+	Return list of <Domain> elements.
+	Currently unpaged, so only works on accounts with up to 20 domains.
+	Currently does not check if domain IsExpired or IsLocked.
+	"""
+	url = methodURL("namecheap.domains.getList", sandbox=SANDBOX)
+	result = requests.get(url).text
+	soup = bs(result, 'lxml')
+	domains = soup.find_all('domain')
+	return domains
+
+def getHostRecords(domain):
+	"""
+	Return list of <Host> elements.
+  Does not yet support mutlipart TLDs.
+	"""
+	url = methodURL("namecheap.domains.dns.getHosts", sandbox=SANDBOX)
+	[SLD, TLD] = domain.split('.')
+	url = url + f"&SLD={SLD}&TLD={TLD}"
+	result = requests.get(url).text
+	soup = bs(result, 'lxml')
+	hosts = soup.find_all('host')
+	return hosts
+
+def setHostRecords(domain,records):
+	"""
+	Updates records for domain.
+	Currently only cares about name, type, address, and optional ttl.
+	"""
+	url = methodURL("namecheap.domains.dns.setHosts", sandbox=SANDBOX)
+	[SLD, TLD] = domain.split('.')
+	url = url + f"&SLD={SLD}&TLD={TLD}"
+	n = 1
+	for record in records:
+		name = record['name']
+		type = record['type']
+		address = record['address']
+		if record['ttl']:
+			ttl = record['ttl']
+		url = url + f"&HostName{n}={name}&RecordType{n}={type}&Address{n}={address}"
+		if ttl:
+			url = url + f"&TTL{n}={ttl}"
+		n += 1
+	result = requests.get(url).text
+	soup = bs(result, 'lxml')
+	success = soup.find_all(attrs={"issuccess":"true"})
+	if success:
+		print("Records successfully updated.")
+
+if __name__ == "__main__":
+	main()
