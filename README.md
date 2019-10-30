@@ -31,9 +31,9 @@ you should be able to run `certbot renew` after that and the settings will be re
 ## etc
 
 pay me for emotional damages caused by namecheap's api:
-- https://liberapay.com/trwnh
-- https://paypal.me/trwnh
+- recurring: https://liberapay.com/trwnh
+- one-time: https://paypal.me/trwnh
 
 interact with me elsewhere:
-- https://mastodon.social/@trwnh
+- fedi: https://mastodon.social/@trwnh
 - smtp/xmpp: a@trwnh.com
