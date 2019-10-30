@@ -51,7 +51,7 @@ def getDomainList():
 def getHostRecords(domain):
 	"""
 	Return list of <Host> elements.
-  Does not yet support mutlipart TLDs.
+	Does not yet support mutlipart TLDs.
 	"""
 	url = methodURL("namecheap.domains.dns.getHosts", sandbox=SANDBOX)
 	[SLD, TLD] = domain.split('.')
