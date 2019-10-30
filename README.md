@@ -9,7 +9,7 @@ certbot manual auth hook for DNS-01 with namecheap
 - was going to be a more robust wrapper of certbot that loops over all your domains, but heck it
 
 ## example usage if you've got existing certs
-edit existing renewal conf, e.g. `/etc/letsencrypt/renewal/tarawneh.org.conf` and make sure `authenticator = manual`, `pref_challs = dns-01,`, `manual_auth_hook = /path/to/hook`, `manual_public_ip_logging_ok = True`
+edit existing renewal conf, e.g. `/etc/letsencrypt/renewal/tarawneh.org.conf` and make sure `authenticator = manual`, `pref_challs = dns-01,`, `manual_auth_hook = /path/to/auth`, `manual_public_ip_logging_ok = True`
 ```
 [renewalparams]
 account = 1234567890abcdef1234567890abcdef
@@ -26,7 +26,7 @@ manual_public_ip_logging_ok = True
 sudo certbot certonly \
      --preferred-challenges=dns \
      --manual \
-     --manual-auth-hook=/path/to/hook \
+     --manual-auth-hook=/path/to/auth \
      --agree-tos \
      -d domain.com,*.domain.com
 ```
