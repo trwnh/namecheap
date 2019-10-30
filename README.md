@@ -23,3 +23,17 @@ sudo certbot certonly \
      --agree-tos \
      -d domain.com,*.domain.com
 ```
+
+## maintenance
+
+you should be able to run `certbot renew` after that and the settings will be remembered? idk
+
+## etc
+
+pay me for emotional damages caused by namecheap's api:
+- https://liberapay.com/trwnh
+- https://paypal.me/trwnh
+
+interact with me elsewhere:
+- https://mastodon.social/@trwnh
+- smtp/xmpp: a@trwnh.com
