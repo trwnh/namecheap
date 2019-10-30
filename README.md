@@ -16,5 +16,10 @@ manual_public_ip_logging_ok = True
 ## example usage if you're making a new cert
 
 ```
-sudo certbot certonly --preferred-challenges=dns --manual --manual-auth-hook=/path/to/hook --agree-tos -d domain.com,*.domain.com
+sudo certbot certonly \
+     --preferred-challenges=dns \
+     --manual \
+     --manual-auth-hook=/path/to/hook \
+     --agree-tos \
+     -d domain.com,*.domain.com
 ```
