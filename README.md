@@ -1,6 +1,13 @@
 # namecheap
 certbot manual auth hook for DNS-01 with namecheap
 
+## current limitations
+- SLD/TLD extraction is extremely naive and does not support multipart tlds
+- no cleanup hook, just an auth hook
+- none of the api calls are paginated yet but this probably doesn't matter bc the hook works based on an env var
+- no error checking or handling of any sort
+- was going to be a more robust wrapper of certbot that loops over all your domains, but heck it
+
 ## example usage if you've got existing certs
 edit existing renewal conf, e.g. `/etc/letsencrypt/renewal/tarawneh.org.conf` and make sure `authenticator = manual`, `pref_challs = dns-01,`, `manual_auth_hook = /path/to/hook`, `manual_public_ip_logging_ok = True`
 ```
