@@ -7,6 +7,8 @@ certbot manual auth hook for DNS-01 with namecheap
   - beautifulsoup
   - lxml
   - requests-cache (optional, currently commented out)
+- certbot
+- namecheap api key https://www.namecheap.com/support/knowledgebase/article.aspx/9739/63/api--faq#c
 
 ## current limitations
 - SLD/TLD extraction is extremely naive and does not support multipart tlds
