@@ -21,7 +21,7 @@ def main():
 	challengeTag = bs(f'<host name="_acme-challenge" type="TXT" address="{challenge}" ttl="60"', 'lxml').body.next
 	hosts.append(challengeTag)
 	setHostRecords(domain,hosts)
-	time.sleep(20)
+	time.sleep(30)
 
 def methodURL(cmd_name, *args, **kwargs):
 	"""
