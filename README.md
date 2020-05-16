@@ -43,7 +43,7 @@ sudo certbot certonly \
 
 ## maintenance
 
-you should be able to run `certbot renew` after that and the settings will be remembered? idk
+you should be able to run `certbot renew` after that and the settings will be remembered? ~idk~ yes, this works without intervention
 
 ## etc
 
