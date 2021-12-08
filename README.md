@@ -13,6 +13,7 @@ certbot manual auth hook for DNS-01 with namecheap
 ## current limitations
 - SLD/TLD extraction is extremely naive and does not support multipart tlds
 - no cleanup hook, just an auth hook
+  - update: a cleanup function has been added to remove old challenges before setting a new one
 - none of the api calls are paginated yet but this probably doesn't matter bc the hook works based on an env var
 - no error checking or handling of any sort
 - was going to be a more robust wrapper of certbot that loops over all your domains, but heck it
@@ -26,7 +27,7 @@ account = 1234567890abcdef1234567890abcdef
 authenticator = manual
 server = https://acme-v02.api.letsencrypt.org/directory
 pref_challs = dns-01,
-manual_auth_hook = /home/trwnh/bin/https
+manual_auth_hook = /home/trwnh/bin/namecheap-dns01-auth
 manual_public_ip_logging_ok = True
 ```
 
