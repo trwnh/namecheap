@@ -68,6 +68,7 @@ def append_challenge_tag(records):
 	challenge = os.getenv('CERTBOT_VALIDATION')
 	challenge_tag = bs(f'<host name="_acme-challenge" type="TXT" address="{challenge}" ttl="60"', 'lxml').body.next
 	records.append(challenge_tag)
+	return records
 
 def set_host_records(domain,records):
 	"""
