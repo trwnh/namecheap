@@ -55,8 +55,8 @@ def clean_old_challenges(records):
 	but without any challenge tags.
 	"""
 	for record in records.copy():
-	if record['name'] == "_acme-challenge":
-		records.remove(record)
+		if record['name'] == "_acme-challenge":
+			records.remove(record)
 	return records
 
 def append_challenge_tag(records):
