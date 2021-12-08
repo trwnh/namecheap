@@ -16,14 +16,15 @@ nc_username = "username"
 
 def main(): 
 	domain = os.getenv('CERTBOT_DOMAIN')
-	hosts = getHostRecords(domain)
+	records = get_host_records(domain)
+	records = clean_old_challenges(records)
 	challenge = os.getenv('CERTBOT_VALIDATION')
-	challengeTag = bs(f'<host name="_acme-challenge" type="TXT" address="{challenge}" ttl="60"', 'lxml').body.next
-	hosts.append(challengeTag)
-	setHostRecords(domain,hosts)
+	challenge_tag = bs(f'<host name="_acme-challenge" type="TXT" address="{challenge}" ttl="60"', 'lxml').body.next
+	records.append(challenge_tag)
+	set_host_records(domain,records)
 	time.sleep(30)
 
-def methodURL(cmd_name, *args, **kwargs):
+def method_url(cmd_name, *args, **kwargs):
 	"""
 	Transforms a method name into a request URL.
 	Can return either sandbox or live URL.
@@ -36,24 +37,12 @@ def methodURL(cmd_name, *args, **kwargs):
 		api_url = "https://api.namecheap.com/xml.response"
 	return f"{api_url}?ApiUser={api_username}&ApiKey={api_key}&UserName={nc_username}&ClientIp={client_ip}&Command={cmd_name}"
 
-def getDomainList():
-	"""
-	Return list of <Domain> elements.
-	Currently unpaged, so only works on accounts with up to 20 domains.
-	Currently does not check if domain IsExpired or IsLocked.
-	"""
-	url = methodURL("namecheap.domains.getList", sandbox=SANDBOX)
-	result = requests.get(url).text
-	soup = bs(result, 'lxml')
-	domains = soup.find_all('domain')
-	return domains
-
-def getHostRecords(domain):
+def get_host_records(domain):
 	"""
 	Return list of <Host> elements.
 	Does not yet support mutlipart TLDs.
 	"""
-	url = methodURL("namecheap.domains.dns.getHosts", sandbox=SANDBOX)
+	url = method_url("namecheap.domains.dns.getHosts", sandbox=SANDBOX)
 	[SLD, TLD] = domain.split('.')
 	url = url + f"&SLD={SLD}&TLD={TLD}"
 	result = requests.get(url).text
@@ -61,12 +50,22 @@ def getHostRecords(domain):
 	hosts = soup.find_all('host')
 	return hosts
 
-def setHostRecords(domain,records):
+def clean_old_challenges(records):
+	"""
+	Returns list of <Host> elements,
+	but removes all old _acme-challenge TXT tags.
+	"""
+	for record in records.copy():
+	if record['name'] == "_acme-challenge":
+		records.remove(record)
+	return records
+
+def set_host_records(domain,records):
 	"""
 	Updates records for domain.
 	Currently only cares about name, type, address, and optional ttl.
 	"""
-	url = methodURL("namecheap.domains.dns.setHosts", sandbox=SANDBOX)
+	url = method_url("namecheap.domains.dns.setHosts", sandbox=SANDBOX)
 	[SLD, TLD] = domain.split('.')
 	url = url + f"&SLD={SLD}&TLD={TLD}"
 	n = 1
