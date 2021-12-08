@@ -18,9 +18,7 @@ def main():
 	domain = os.getenv('CERTBOT_DOMAIN')
 	records = get_host_records(domain)
 	records = clean_old_challenges(records)
-	challenge = os.getenv('CERTBOT_VALIDATION')
-	challenge_tag = bs(f'<host name="_acme-challenge" type="TXT" address="{challenge}" ttl="60"', 'lxml').body.next
-	records.append(challenge_tag)
+	records = append_challenge_tag(records)
 	set_host_records(domain,records)
 	time.sleep(30)
 
@@ -52,13 +50,24 @@ def get_host_records(domain):
 
 def clean_old_challenges(records):
 	"""
+	Removes all old _acme-challenge TXT tags.
 	Returns list of <Host> elements,
-	but removes all old _acme-challenge TXT tags.
+	but without any challenge tags.
 	"""
 	for record in records.copy():
 	if record['name'] == "_acme-challenge":
 		records.remove(record)
 	return records
+
+def append_challenge_tag(records):
+	"""
+	Generate a new challenge tag and append to records.
+	Returns list of <Host> elements,
+	with a new challenge tag appended.
+	"""
+	challenge = os.getenv('CERTBOT_VALIDATION')
+	challenge_tag = bs(f'<host name="_acme-challenge" type="TXT" address="{challenge}" ttl="60"', 'lxml').body.next
+	records.append(challenge_tag)
 
 def set_host_records(domain,records):
 	"""
