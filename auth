@@ -20,7 +20,7 @@ def main():
 	records = clean_old_challenges(records)
 	records = append_challenge_tag(records)
 	set_host_records(domain,records)
-	time.sleep(30)
+	time.sleep(60)
 
 def method_url(cmd_name, *args, **kwargs):
 	"""
