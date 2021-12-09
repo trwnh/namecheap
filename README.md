@@ -27,7 +27,7 @@ account = 1234567890abcdef1234567890abcdef
 authenticator = manual
 server = https://acme-v02.api.letsencrypt.org/directory
 pref_challs = dns-01,
-manual_auth_hook = /home/trwnh/bin/namecheap-dns01-auth
+manual_auth_hook = /home/trwnh/bin/namecheap/auth
 manual_public_ip_logging_ok = True
 ```
 
