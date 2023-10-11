@@ -1,99 +1,114 @@
-#!/bin/python
-
+#!/usr/bin/python3
+# Import required libraries
 import requests
+import socket
+import dns.resolver
 from bs4 import BeautifulSoup as bs
-#import requests_cache
 import os
 import time
 
-#requests_cache.install_cache('namecheap_cache')
-SANDBOX=False
-
-api_username = "username"
-api_key = "put your namecheap api key here"
+# Configuration settings (Line 9)
+SANDBOX = False
+api_username = "[USERNAME]"
+api_key = "[API KEY]"
 client_ip = "0.0.0.0"
-nc_username = "username"
+nc_username = "[USERNAME]"
 
-def main(): 
-	domain = os.getenv('CERTBOT_DOMAIN')
-	records = get_host_records(domain)
-	records = clean_old_challenges(records)
-	records = append_challenge_tag(records)
-	set_host_records(domain,records)
-	time.sleep(60)
+# Main function where the script starts (Line 18)
+def main():
+    domain = os.getenv('CERTBOT_DOMAIN')
+    validation = os.getenv('CERTBOT_VALIDATION')
+    # Fetch existing DNS records for the domain
+    records = get_host_records(domain)
+    if records is None:
+        print("Failed to get host records.")
+        return
+    # Clean old challenge records if any
+    records = clean_old_challenges(records)
+    # Append new challenge record
+    records = append_challenge_tag(records)
+    # Set updated DNS records
+    set_host_records(domain, records)
+    # Wait for DNS propagation
+    if wait_for_dns_propagation("_acme-challenge." + domain, validation):
+        print("DNS propagation completed.")
+    else:
+        print("DNS propagation failed.")
 
+# Check for DNS propagation (Line 39)
+def wait_for_dns_propagation(domain, expected_validation, max_attempts=30, sleep_interval=10):
+    attempts = 0
+    while attempts < max_attempts:
+        try:
+            # Query DNS for TXT records
+            answers = dns.resolver.resolve(domain, 'TXT')
+            for rdata in answers:
+                # Check if expected validation is propagated
+                if expected_validation in rdata.strings[0].decode('utf-8'):
+                    return True
+        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+            pass
+        except dns.exception.Timeout:
+            pass
+        attempts += 1
+        time.sleep(sleep_interval)
+    return False
+
+# Construct the API URL for a given command (Line 59)
 def method_url(cmd_name, *args, **kwargs):
-	"""
-	Transforms a method name into a request URL.
-	Can return either sandbox or live URL.
-	"""
-	global api_username, api_key, nc_username, client_ip
-	sandbox = kwargs.get('sandbox', True)
-	if sandbox:
-		api_url = "https://api.sandbox.namecheap.com/xml.response"
-	else:
-		api_url = "https://api.namecheap.com/xml.response"
-	return f"{api_url}?ApiUser={api_username}&ApiKey={api_key}&UserName={nc_username}&ClientIp={client_ip}&Command={cmd_name}"
+    global api_username, api_key, nc_username, client_ip
+    sandbox = kwargs.get('sandbox', SANDBOX)
+    # Choose appropriate API URL based on sandbox setting
+    api_url = "https://api.sandbox.namecheap.com/xml.response" if sandbox else "https://api.namecheap.com/xml.response"
+    return f"{api_url}?ApiUser={api_username}&ApiKey={api_key}&UserName={nc_username}&ClientIp={client_ip}&Command={cmd_name}"
 
+# Fetch DNS records for a domain (Line 68)
 def get_host_records(domain):
-	"""
-	Return list of <Host> elements.
-	Does not yet support mutlipart TLDs.
-	"""
-	url = method_url("namecheap.domains.dns.getHosts", sandbox=SANDBOX)
-	[SLD, TLD] = domain.split('.')
-	url = url + f"&SLD={SLD}&TLD={TLD}"
-	result = requests.get(url).text
-	soup = bs(result, 'lxml')
-	hosts = soup.find_all('host')
-	return hosts
+    url = method_url("namecheap.domains.dns.getHosts")
+    parts = domain.split('.')
+    SLD, TLD = parts[-2], parts[-1]
+    url += f"&SLD={SLD}&TLD={TLD}"
+    # Make API request and parse the XML response
+    result = requests.get(url).text
+    soup = bs(result, 'lxml')
+    hosts = soup.find_all('host')
+    return [{'name': host['name'], 'type': host['type'], 'address': host['address'], 'ttl': host.get('ttl', None)} for host in hosts]
 
+# Remove old "_acme-challenge" records (Line 78)
 def clean_old_challenges(records):
-	"""
-	Removes all old _acme-challenge TXT tags.
-	Returns list of <Host> elements,
-	but without any challenge tags.
-	"""
-	for record in records.copy():
-		if record['name'] == "_acme-challenge":
-			records.remove(record)
-	return records
+    return [record for record in records if record['name'] != "_acme-challenge"]
 
+# Append new "_acme-challenge" record (Line 82)
 def append_challenge_tag(records):
-	"""
-	Generate a new challenge tag and append to records.
-	Returns list of <Host> elements,
-	with a new challenge tag appended.
-	"""
-	challenge = os.getenv('CERTBOT_VALIDATION')
-	challenge_tag = bs(f'<host name="_acme-challenge" type="TXT" address="{challenge}" ttl="60"', 'lxml').body.next
-	records.append(challenge_tag)
-	return records
+    challenge = os.getenv('CERTBOT_VALIDATION')
+    challenge_tag = {'name': '_acme-challenge', 'type': 'TXT', 'address': challenge, 'ttl': '60'}
+    records.append(challenge_tag)
+    return records
 
-def set_host_records(domain,records):
-	"""
-	Updates records for domain.
-	Currently only cares about name, type, address, and optional ttl.
-	"""
-	url = method_url("namecheap.domains.dns.setHosts", sandbox=SANDBOX)
-	[SLD, TLD] = domain.split('.')
-	url = url + f"&SLD={SLD}&TLD={TLD}"
-	n = 1
-	for record in records:
-		name = record['name']
-		type = record['type']
-		address = record['address']
-		if record['ttl']:
-			ttl = record['ttl']
-		url = url + f"&HostName{n}={name}&RecordType{n}={type}&Address{n}={address}"
-		if ttl:
-			url = url + f"&TTL{n}={ttl}"
-		n += 1
-	result = requests.get(url).text
-	soup = bs(result, 'lxml')
-	success = soup.find_all(attrs={"issuccess":"true"})
-	if success:
-		print("Records successfully updated.")
+# Update DNS records for a domain (Line 88)
+def set_host_records(domain, records):
+    url = method_url("namecheap.domains.dns.setHosts")
+    parts = domain.split('.')
+    SLD, TLD = parts[-2], parts[-1]
+    url += f"&SLD={SLD}&TLD={TLD}"
+    # Construct the URL with new DNS records
+    for n, record in enumerate(records, 1):
+        name = record['name']
+        type = record['type']
+        address = record['address']
+        ttl = record.get('ttl', None)
+        url += f"&HostName{n}={name}&RecordType{n}={type}&Address{n}={address}"
+        if ttl:
+            url += f"&TTL{n}={ttl}"
+    # Make API request and check for success
+    result = requests.get(url).text
+    soup = bs(result, 'lxml')
+    success = soup.find_all(attrs={"issuccess": "true"})
+    if success:
+        print("Records successfully updated.")
+    else:
+        print("Failed to update records.")
 
+# Script entry point (Line 109)
 if __name__ == "__main__":
-	main()
+    main()
