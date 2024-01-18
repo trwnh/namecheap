@@ -1,5 +1,5 @@
 # namecheap
-certbot manual auth hook for DNS-01 with namecheap
+certbot manual auth hook for DNS-01 with namecheap and subdomain cert support
 
 ## requirements
 - python
@@ -11,7 +11,6 @@ certbot manual auth hook for DNS-01 with namecheap
 - namecheap api key https://www.namecheap.com/support/knowledgebase/article.aspx/9739/63/api--faq#c
 
 ## current limitations
-- SLD/TLD extraction is extremely naive and does not support multipart tlds
 - no cleanup hook, just an auth hook
   - update: a cleanup function has been added to remove old challenges before setting a new one
 - none of the api calls are paginated yet but this probably doesn't matter bc the hook works based on an env var
@@ -40,6 +39,17 @@ sudo certbot certonly \
      --manual-auth-hook=/path/to/auth \
      --agree-tos \
      -d domain.com,*.domain.com
+```
+
+## example usage if you're wanting a cert for a subdomain
+
+```
+sudo certbot certonly \
+     --preferred-challenges=dns \
+     --manual \
+     --manual-auth-hook=/path/to/auth \
+     --agree-tos \
+     -d sub.domain.com
 ```
 
 ## maintenance
