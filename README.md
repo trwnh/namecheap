@@ -11,6 +11,8 @@ certbot manual auth hook for DNS-01 with namecheap and subdomain cert support
 - namecheap api key https://www.namecheap.com/support/knowledgebase/article.aspx/9739/63/api--faq#c
 
 ## current limitations
+- SLD/TLD extraction is extremely naive and does not support multipart tlds
+  - update: it now handles subdomains thanks to @maservant
 - no cleanup hook, just an auth hook
   - update: a cleanup function has been added to remove old challenges before setting a new one
 - none of the api calls are paginated yet but this probably doesn't matter bc the hook works based on an env var
@@ -19,14 +21,14 @@ certbot manual auth hook for DNS-01 with namecheap and subdomain cert support
 - lol everything is hardcoded so make sure to put in your own username / api key
 
 ## example usage if you've got existing certs
-edit existing renewal conf, e.g. `/etc/letsencrypt/renewal/tarawneh.org.conf` and make sure `authenticator = manual`, `pref_challs = dns-01,`, `manual_auth_hook = /path/to/auth`, `manual_public_ip_logging_ok = True`
+edit existing renewal conf, e.g. `/etc/letsencrypt/renewal/tarawneh.org.conf` and make sure `authenticator = manual`, `pref_challs = dns-01,`, `manual_auth_hook = /path/to/auth.py`, `manual_public_ip_logging_ok = True`
 ```
 [renewalparams]
 account = 1234567890abcdef1234567890abcdef
 authenticator = manual
 server = https://acme-v02.api.letsencrypt.org/directory
 pref_challs = dns-01,
-manual_auth_hook = /home/trwnh/bin/namecheap/auth
+manual_auth_hook = /home/trwnh/bin/namecheap/auth.py
 manual_public_ip_logging_ok = True
 ```
 
@@ -36,7 +38,7 @@ manual_public_ip_logging_ok = True
 sudo certbot certonly \
      --preferred-challenges=dns \
      --manual \
-     --manual-auth-hook=/path/to/auth \
+     --manual-auth-hook=/path/to/auth.py \
      --agree-tos \
      -d domain.com,*.domain.com
 ```
@@ -47,7 +49,7 @@ sudo certbot certonly \
 sudo certbot certonly \
      --preferred-challenges=dns \
      --manual \
-     --manual-auth-hook=/path/to/auth \
+     --manual-auth-hook=/path/to/auth.py \
      --agree-tos \
      -d sub.domain.com
 ```
