@@ -1,6 +1,9 @@
 # namecheap
 certbot manual auth hook for DNS-01 with namecheap and subdomain cert support
 
+> [!NOTE]  
+> i no longer use namecheap, and so i have stopped maintaining this script.
+
 ## requirements
 - python
   - requests
